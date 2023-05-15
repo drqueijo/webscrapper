@@ -198,6 +198,11 @@ const getTableInfo = async (driver: WebDriver, gameTitle: string) => {
       technology = res
       continue
     }
+    if(firstChildText === 'Game Size:') {
+      const res = await tableBodyTr[i].findElement(By.xpath('./td[1]')).getText()
+      game_size = res
+      continue
+    }
     if(firstChildText === 'Last Update:') {
       const res = await tableBodyTr[i].findElement(By.xpath('./td[1]')).getText()
       last_update = res
