@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+import mysql from 'mysql';
 
 export const connection = mysql.createConnection({
   host: 'localhost',
@@ -7,24 +7,11 @@ export const connection = mysql.createConnection({
   database: 'web_scrapping'
 });
 
-connection.connect((err: string) => {
+connection.connect((err) => {
   if (err) {
     console.error('Error connecting to database: ', err);
     return;
   }
   console.log('Connected to database!');
 });
-
-export const createTableIfNotExists = (tableName: string) => {
-  const sql = `CREATE TABLE IF NOT EXISTS ${tableName.replaceAll(' ', '_')} (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    ranking VARCHAR(255) NOT NULL
-  );`;
-
-  connection.query(sql, (error: any) => {
-    if (error) throw error;
-    console.log(`Table ${tableName} created or already exists.`);
-  });
-};
 

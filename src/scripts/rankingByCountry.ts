@@ -1,34 +1,37 @@
-const { Builder, By, Key, until, Select  } = require('selenium-webdriver');
-import { COUNTRY_CODE, DEFAULT_URL, NUMBER_OF_PAGES, ProgressBar, TABLE_NAME } from "../config";
-import { connection, createTableIfNotExists } from "../database";
+import { Builder, By, Key, until, ThenableWebDriver, WebDriver } from 'selenium-webdriver';
+const { Select } = require('selenium-webdriver')
+import { COUNTRY_CODE, DEFAULT_URL, TABLE_NAME } from "../config";
+import { ProgressBar } from '../utils/progressBar'
+import { connection } from "../database";
 
-const getDriver = async (browser: 'chrome' | 'firefox' | 'edge'): Promise<any | null> => {
-  let BROWSERDRIVER = null
-  try {
-    BROWSERDRIVER = await new Builder().forBrowser(browser).build();
-  } catch (e) {
-    console.log(e)
-  } finally {
-    if(BROWSERDRIVER) console.log('driver started')
-  }
-  return BROWSERDRIVER
-}
+export const createTableIfNotExists = (tableName: string) => {
+  const sql = `CREATE TABLE IF NOT EXISTS ${tableName.replaceAll(' ', '_')} (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    ranking VARCHAR(255) NOT NULL
+  );`;
 
-const getRankingByName = async (driver: any) => {
+  connection.query(sql, (error) => {
+    if (error) throw error;
+    console.log(`Table ${tableName} created or already exists.`);
+  });
+};
+
+const getRankingByName = async (driver: WebDriver): Promise<void> => {
   let gamesNames = await driver.findElements(By.className('providerName'));
   let gameRankings = await driver.findElements(By.className('widgetSRBIG-small-pr'));
   for (let i = 0; i < gamesNames.length; i++) {
     let gameName = await gamesNames[i].getText();
     let gameRanking = await gameRankings[i].getText();
     const query = `INSERT INTO ${TABLE_NAME} (name, ranking) VALUES (?, ?)`;
-    connection.query(query, [gameName, gameRanking], (error: any, results: any, fields: any) => {
+    connection.query(query, [gameName, gameRanking], (error, results, fields) => {
       if (error) throw error;
     });
 
   }
 }
 
-const navigate = async (driver: any, page: number) => {
+const navigate = async (driver: WebDriver, page: number): Promise<void> => {
   let navpagCont = await driver.findElement(By.className("navpag-cont"));
   let liElements = await navpagCont.findElements(By.tagName("li"));
 
@@ -37,7 +40,7 @@ const navigate = async (driver: any, page: number) => {
   let nextLi = await activeLi.findElement(By.xpath("following-sibling::li[1]"));
 
   let link = await nextLi.findElement(By.tagName("a"));
-  await driver.executeScript(link.getAttribute("onclick"));
+  await driver.executeScript(await link.getAttribute("onclick"));
 
   await driver.wait(until.stalenessOf(link));
   await driver.wait(until.urlContains('#anchorFltrList'));
@@ -48,14 +51,14 @@ const navigate = async (driver: any, page: number) => {
   });
 };
 
-const selectCountry = async (driver: any) => {
+const selectCountry = async (driver: WebDriver): Promise<void> => {
   let filter = await driver.findElement(By.id('aFltrBtnModal'))
-  await driver.executeScript(filter.getAttribute("onclick"));
+  await driver.executeScript(await filter.getAttribute("onclick"));
   let select = await driver.findElement(By.name('cISO'));
   let selectOption = await new Select(select).selectByValue(COUNTRY_CODE)
   let divFilter = await driver.findElement(By.className('battonFiltrMenuShow'));
   let linkFilter = await divFilter.findElement(By.tagName("a"));
-  await driver.executeScript(linkFilter.getAttribute("onclick"));
+  await driver.executeScript(await linkFilter.getAttribute("onclick"));
   await driver.wait(until.stalenessOf(linkFilter));
   await driver.wait(async () => {
     const readyState = await driver.executeScript('return document.readyState;');
@@ -63,10 +66,7 @@ const selectCountry = async (driver: any) => {
   });
 }
 
-export default async function start(numberOfPages: number) {
-
-    const driver = await getDriver('chrome')
-    if(!driver) return console.log('error getting driver')
+export default async function startRankingScript(numberOfPages: number, driver: WebDriver) {
     createTableIfNotExists(TABLE_NAME)
     try {
       await driver.get(DEFAULT_URL);
@@ -83,7 +83,7 @@ export default async function start(numberOfPages: number) {
     }
     finally {
       await driver.quit();
-      connection.end((err: any) => {
+      connection.end((err) => {
         if (err) {
           console.error('Error closing database connection: ', err);
           return;

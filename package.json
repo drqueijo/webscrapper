@@ -17,6 +17,8 @@
     "selenium-webdriver": "^4.9.2"
   },
   "devDependencies": {
+    "@types/mysql": "^2.15.21",
+    "@types/progress": "^2.0.5",
     "@types/selenium-webdriver": "^4.1.14"
   }
 }
