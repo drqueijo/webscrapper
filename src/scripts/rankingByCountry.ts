@@ -3,6 +3,8 @@ const { Select } = require('selenium-webdriver')
 import { COUNTRY_CODE, DEFAULT_URL, TABLE_NAME } from "../config";
 import { ProgressBar } from '../utils/progressBar'
 import { connection } from "../database";
+import { getDriver } from '..';
+import { BrowserTypes } from '../utils/enums';
 
 export const createTableIfNotExists = (tableName: string) => {
   const sql = `CREATE TABLE IF NOT EXISTS ${tableName.replaceAll(' ', '_')} (
@@ -51,11 +53,11 @@ const navigate = async (driver: WebDriver, page: number): Promise<void> => {
   });
 };
 
-const selectCountry = async (driver: WebDriver): Promise<void> => {
+const selectCountry = async (driver: WebDriver, country: string): Promise<void> => {
   let filter = await driver.findElement(By.id('aFltrBtnModal'))
   await driver.executeScript(await filter.getAttribute("onclick"));
   let select = await driver.findElement(By.name('cISO'));
-  let selectOption = await new Select(select).selectByValue(COUNTRY_CODE)
+  let selectOption = await new Select(select).selectByValue(country)
   let divFilter = await driver.findElement(By.className('battonFiltrMenuShow'));
   let linkFilter = await divFilter.findElement(By.tagName("a"));
   await driver.executeScript(await linkFilter.getAttribute("onclick"));
@@ -66,11 +68,13 @@ const selectCountry = async (driver: WebDriver): Promise<void> => {
   });
 }
 
-export default async function startRankingScript(numberOfPages: number, driver: WebDriver) {
-    createTableIfNotExists(TABLE_NAME)
+export default async function startRankingScript(numberOfPages: number, tableName: string, country: string = COUNTRY_CODE) {
+    createTableIfNotExists(tableName)
+    const driver = await getDriver(BrowserTypes.CHROME)
+    if(!driver) return
     try {
       await driver.get(DEFAULT_URL);
-      await selectCountry(driver)
+      await selectCountry(driver, country)
 
       for (let i = 0; i < numberOfPages; i++) {
         if(i !== 0) await navigate(driver, i + 1)
@@ -83,13 +87,7 @@ export default async function startRankingScript(numberOfPages: number, driver: 
     }
     finally {
       await driver.quit();
-      connection.end((err) => {
-        if (err) {
-          console.error('Error closing database connection: ', err);
-          return;
-        }
-        console.log('Database connection closed!');
-      });
+      console.log('Scrapping finished in ' + COUNTRY_CODE)
     }
 };
 

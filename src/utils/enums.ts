@@ -1,6 +1,7 @@
 export enum ScriptTypes {
   RANKING = 'ranking',
-  GAMEINFO = 'gameinfo'
+  GAMEINFO = 'gameinfo',
+  ALLRANKINGS = 'allrankings'
 }
 
 export enum BrowserTypes {

@@ -32,7 +32,7 @@ const country = {
     "code": "CA"
   },
   "CA-ON": {
-    "name": "Canada (Ontario)",
+    "name": "Canada Ontario",
     "code": "CA-ON"
   },
   "CL": {
@@ -133,6 +133,7 @@ const country = {
   },
   "NZ": {
     "name": "New Zealand",
+    "code": "NZ"
   }
 }
 

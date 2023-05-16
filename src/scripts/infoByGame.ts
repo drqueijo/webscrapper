@@ -1,8 +1,10 @@
 import { Builder, By, Key, until, ThenableWebDriver, WebDriver, WebElement } from 'selenium-webdriver';
 const { Select } = require('selenium-webdriver')
-import { COUNTRY_CODE, DEFAULT_URL, NUMBER_OF_PAGES, TABLE_NAME } from "../config";
+import { COUNTRY_CODE, DEFAULT_URL, NUMBER_OF_PAGES } from "../config";
 import progressBar from 'progress';
 import { connection } from "../database";
+import { getDriver } from '..';
+import { BrowserTypes } from '../utils/enums';
 let actualPage = 1
 const ELEMENTS_PER_PAGE = 28
 export const ProgressBar = new progressBar('Scraping [:bar] :percent | :elapseds of :etas', {
@@ -11,9 +13,9 @@ export const ProgressBar = new progressBar('Scraping [:bar] :percent | :elapseds
   width: 200,
   total: NUMBER_OF_PAGES * ELEMENTS_PER_PAGE
 });
-
+const TABLE_INFO_BY_GAME_NAME = 'game_info'
 export const createTableIfNotExists = () => {
-  const sql = `CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
+  const sql = `CREATE TABLE IF NOT EXISTS ${TABLE_INFO_BY_GAME_NAME} (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     provider VARCHAR(255) NOT NULL,
@@ -39,7 +41,7 @@ export const createTableIfNotExists = () => {
 
   connection.query(sql, (error) => {
     if (error) throw error;
-    console.log(`Table ${TABLE_NAME} created or already exists.`);
+    console.log(`Table ${TABLE_INFO_BY_GAME_NAME} created or already exists.`);
   });
 };
 
@@ -291,7 +293,7 @@ const insertIntoDatabase = (
     game_size,
     last_update,
   ]
-  let query = `INSERT INTO ${TABLE_NAME} `
+  let query = `INSERT INTO ${TABLE_INFO_BY_GAME_NAME} `
   query += '(name, provider, release_date, type, rtp, variance, hit_frequency, max_win, min_bet, max_bet, layout, betways, features, theme, objects, genre, other_tags, technology, game_size, last_update) '
   query += 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'  
   connection.query(query, values, (error, results, fields) => {
@@ -321,7 +323,9 @@ const navigate = async (driver: WebDriver): Promise<void> => {
 
 
 
-export default async function startGameInfoScript(numberOfPages: number, driver: WebDriver) {
+export default async function startGameInfoScript(numberOfPages: number) {
+  const driver = await getDriver(BrowserTypes.CHROME)
+  if(!driver) return
   createTableIfNotExists()
   try {
     await driver.get(DEFAULT_URL);
@@ -337,12 +341,5 @@ export default async function startGameInfoScript(numberOfPages: number, driver:
   }
   finally {
     console.log('Scrapping finished!!')
-    connection.end((err) => {
-      if (err) {
-        console.error('Error closing database connection: ', err);
-        return;
-      }
-      console.log('Database connection closed!');
-    });
   }
 };
