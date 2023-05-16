@@ -1,11 +1,19 @@
 import { Builder, By, Key, until, ThenableWebDriver, WebDriver, WebElement } from 'selenium-webdriver';
 const { Select } = require('selenium-webdriver')
-import { COUNTRY_CODE, DEFAULT_URL, TABLE_NAME } from "../config";
-import { ProgressBar } from '../utils/progressBar'
+import { COUNTRY_CODE, DEFAULT_URL, NUMBER_OF_PAGES, TABLE_NAME } from "../config";
+import progressBar from 'progress';
 import { connection } from "../database";
+let actualPage = 1
+const ELEMENTS_PER_PAGE = 28
+export const ProgressBar = new progressBar('Scraping [:bar] :percent | :elapseds of :etas', {
+  complete: '/',
+  incomplete: ' ',
+  width: 200,
+  total: NUMBER_OF_PAGES * ELEMENTS_PER_PAGE
+});
 
 export const createTableIfNotExists = () => {
-  const sql = `CREATE TABLE IF NOT EXISTS gameinfo (
+  const sql = `CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     provider VARCHAR(255) NOT NULL,
@@ -31,7 +39,7 @@ export const createTableIfNotExists = () => {
 
   connection.query(sql, (error) => {
     if (error) throw error;
-    console.log(`Table gameinfo created or already exists.`);
+    console.log(`Table ${TABLE_NAME} created or already exists.`);
   });
 };
 
@@ -60,7 +68,11 @@ const getPageGames = async (driver: WebDriver): Promise<void> => {
 }
 
 const getTableInfo = async (driver: WebDriver, gameTitle: string) => {
-  const tableDiv = await driver.findElement(By.className('slotAttrReview'))
+  const elementExists = await driver.findElements(By.className('slotAttrReview')).then(elements => elements.length > 0);
+  let tableDiv: WebElement | null = null
+  if(!elementExists) return 
+  
+  tableDiv = await driver.findElement(By.className('slotAttrReview'))
   const tableBody = await tableDiv.findElement(By.tagName('tbody'))
   const tableBodyTr = await tableBody.findElements(By.tagName('tr'))
   let name = gameTitle
@@ -232,6 +244,7 @@ const getTableInfo = async (driver: WebDriver, gameTitle: string) => {
     game_size,
     last_update,
   )
+  ProgressBar.tick();
 }
 
 const insertIntoDatabase = (
@@ -278,7 +291,7 @@ const insertIntoDatabase = (
     game_size,
     last_update,
   ]
-  let query = "INSERT INTO gameinfo "
+  let query = `INSERT INTO ${TABLE_NAME} `
   query += '(name, provider, release_date, type, rtp, variance, hit_frequency, max_win, min_bet, max_bet, layout, betways, features, theme, objects, genre, other_tags, technology, game_size, last_update) '
   query += 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'  
   connection.query(query, values, (error, results, fields) => {
@@ -312,18 +325,18 @@ export default async function startGameInfoScript(numberOfPages: number, driver:
   createTableIfNotExists()
   try {
     await driver.get(DEFAULT_URL);
-    
     for (let i = 0; i < numberOfPages; i++) {
-      ProgressBar.tick();
       if(i !== 0) await navigate(driver)
       await getPageGames(driver)
+      actualPage++
     }
 
   } catch (e) {
-    console.log('Error in script ---- ', e)
+    console.log('Error at page '+ actualPage)
+    console.log(e)
   }
   finally {
-    await driver.quit();
+    console.log('Scrapping finished!!')
     connection.end((err) => {
       if (err) {
         console.error('Error closing database connection: ', err);
