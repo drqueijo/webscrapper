@@ -23,11 +23,4 @@ export const getDriver = async (browser: BrowserTypes = BrowserTypes.CHROME): Pr
   if(SCRIPT_TYPE === ScriptTypes.RANKING) await startRankingScript(NUMBER_OF_PAGES, TABLE_NAME)
   if(SCRIPT_TYPE === ScriptTypes.GAMEINFO) await startGameInfoScript(NUMBER_OF_PAGES)
   if(SCRIPT_TYPE === ScriptTypes.ALLRANKINGS) await startAllRankingsScript(NUMBER_OF_PAGES)
-  connection.end((err) => {
-    if (err) {
-      console.error('Error closing database connection: ', err);
-      return;
-    }
-    console.log('Database connection closed!');
-  });
 })()
