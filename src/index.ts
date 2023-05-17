@@ -5,6 +5,7 @@ import { Builder, ThenableWebDriver, WebDriver } from "selenium-webdriver";
 import startGameInfoScript from "./scripts/infoByGame";
 import startAllRankingsScript from "./scripts/allCountriesRankings";
 import { connection } from "./database";
+import country from "./utils/countries";
 
 export const getDriver = async (browser: BrowserTypes = BrowserTypes.CHROME): Promise<ThenableWebDriver | null> => {
   let BROWSERDRIVER: WebDriver | null = null
@@ -22,5 +23,5 @@ export const getDriver = async (browser: BrowserTypes = BrowserTypes.CHROME): Pr
 (async () => {
   if(SCRIPT_TYPE === ScriptTypes.RANKING) await startRankingScript(NUMBER_OF_PAGES, TABLE_NAME)
   if(SCRIPT_TYPE === ScriptTypes.GAMEINFO) await startGameInfoScript(NUMBER_OF_PAGES)
-  if(SCRIPT_TYPE === ScriptTypes.ALLRANKINGS) await startAllRankingsScript(NUMBER_OF_PAGES)
+  if(SCRIPT_TYPE === ScriptTypes.ALLRANKINGS) await startAllRankingsScript(NUMBER_OF_PAGES, country.BE)
 })()
