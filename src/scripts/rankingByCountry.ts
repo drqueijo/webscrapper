@@ -19,13 +19,13 @@ export const createTableIfNotExists = (tableName: string) => {
   });
 };
 
-const getRankingByName = async (driver: WebDriver): Promise<void> => {
+const getRankingByName = async (driver: WebDriver, tableName:string): Promise<void> => {
   let gamesNames = await driver.findElements(By.className('providerName'));
   let gameRankings = await driver.findElements(By.className('widgetSRBIG-small-pr'));
   for (let i = 0; i < gamesNames.length; i++) {
     let gameName = await gamesNames[i].getText();
     let gameRanking = await gameRankings[i].getText();
-    const query = `INSERT INTO ${TABLE_NAME} (name, ranking) VALUES (?, ?)`;
+    const query = `INSERT INTO ${tableName} (name, ranking) VALUES (?, ?)`;
     connection.query(query, [gameName, gameRanking], (error, results, fields) => {
       if (error) throw error;
     });
@@ -78,7 +78,7 @@ export default async function startRankingScript(numberOfPages: number, tableNam
 
       for (let i = 0; i < numberOfPages; i++) {
         if(i !== 0) await navigate(driver, i + 1)
-        await getRankingByName(driver)
+        await getRankingByName(driver, tableName)
         ProgressBar.tick();
       }
 
